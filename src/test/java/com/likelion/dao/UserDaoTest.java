@@ -12,16 +12,12 @@ import java.sql.SQLException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@ExtendWith(SpringExtension.class)
-@ContextConfiguration(classes=UserDaoFactory.class)
 class UserDaoTest {
 
-    @Autowired
-    ApplicationContext context;
 
     @Test
     void addAndGet() throws SQLException {
-        UserDao userDao = context.getBean("awsUserDao",UserDao.class);
+        UserDao userDao = new UserDaoFactory().awsUserDao();
         userDao.deleteAll();
         assertEquals(0,userDao.getCount());
 
