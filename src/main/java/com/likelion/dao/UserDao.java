@@ -3,45 +3,30 @@ package com.likelion.dao;
 import com.likelion.domain.User;
 import org.springframework.dao.EmptyResultDataAccessException;
 
+import javax.sql.DataSource;
 import java.sql.*;
 import java.util.Map;
 
 public class UserDao {
-    private ConnectionMaker connectionMaker;
-    public UserDao(){
-        this.connectionMaker = new AwsConnectionMaker();
-    }
-    public UserDao(ConnectionMaker connectionMaker){
-        this.connectionMaker = connectionMaker;
+    private DataSource dataSource;
+    private JdbcContext jdbcContext;
+    public UserDao(DataSource dataSource) {
+        this.dataSource = dataSource;
+        this.jdbcContext = new JdbcContext(dataSource);
     }
 
-    public void jdbcContextWithStatementStrategy(StatementStrategy stmt){
-        Connection c = null;
-        PreparedStatement ps = null;
 
-        try{
-            c = connectionMaker.makeConnection();
-            ps = stmt.makePreparedStatement(c);
-            ps.executeUpdate();
-        }catch (SQLException e){
-            throw new RuntimeException(e);
-        } finally {
-            if (ps != null) {
-                try {
-                    ps.close();
-                } catch (SQLException e) {
-                }
-            }
-            if (c != null) {
-                try {
-                    c.close();
-                } catch (SQLException e) {
-                }
-            }
-        }
-    }
     public void add(User user) throws SQLException {
-        jdbcContextWithStatementStrategy(new AddStrategy(user));
+        jdbcContext.workWithStatementStrategy(new StatementStrategy() {
+            @Override
+            public PreparedStatement makePreparedStatement(Connection connection) throws SQLException {
+                PreparedStatement ps = connection.prepareStatement("INSERT INTO users(id, name, password) VALUES(?,?,?);");
+                ps.setString(1,user.getId());
+                ps.setString(2,user.getName());
+                ps.setString(3,user.getPassword());
+                return ps;
+            }
+        });
     }
 
     public User get(String id) throws SQLException {
@@ -64,7 +49,12 @@ public class UserDao {
     }
 
     public void deleteAll() throws SQLException {
-        jdbcContextWithStatementStrategy(new DeleteAllStrategy());
+        jdbcContext.workWithStatementStrategy(new StatementStrategy() {
+            @Override
+            public PreparedStatement makePreparedStatement(Connection connection) throws SQLException {
+                return connection.prepareStatement("DELETE FROM users");
+            }
+        });
 
     }
 
@@ -74,7 +64,7 @@ public class UserDao {
         ResultSet rs = null;
 
         try {
-            c = connectionMaker.makeConnection();
+            c = dataSource.getConnection();
             ps = c.prepareStatement("SELECT count(*) FROM users");
             rs = ps.executeQuery();
             rs.next();
