@@ -2,6 +2,7 @@ package com.likelion.dao;
 
 import com.likelion.domain.User;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +13,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import javax.swing.*;
 import java.sql.SQLException;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -36,6 +38,7 @@ class UserDaoTest {
     }
 
     @Test
+    @DisplayName("add, get, deleteAll 테스트")
     void addAndGet() throws SQLException {
         userDao.deleteAll();
         assertEquals(0,userDao.getCount());
@@ -48,6 +51,7 @@ class UserDaoTest {
     }
 
     @Test
+    @DisplayName("getCount테스트")
     void count() throws SQLException {
         userDao.deleteAll();
         assertEquals(0, userDao.getCount());
@@ -61,10 +65,25 @@ class UserDaoTest {
     }
 
     @Test
+    @DisplayName("findById 없는 경우 예외 처리")
     void findById() {
         assertThrows(EmptyResultDataAccessException.class, ()->{
             userDao.get("30");
         });
+    }
+
+    @Test
+    @DisplayName("모든 User List로 받기")
+    void getAllTest() throws SQLException {
+        userDao.deleteAll();
+        List<User> users = userDao.getAll();
+        assertEquals(0, users.size());
+
+        userDao.add(user1);
+        userDao.add(user2);
+        userDao.add(user3);
+        users = userDao.getAll();
+        assertEquals(3, users.size());
     }
 
 }
